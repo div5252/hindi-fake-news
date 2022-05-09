@@ -28,7 +28,7 @@ cd fake_news_generator
 ```
 2. Run the pos.py script
 ```sh
-python pos.py --person_list=<csv containing hindi names> --location_list=<csv containing hindi locations> --organisation_list=<csv containing hindi organization names> --input_file=<input real news csv> --output_file=<output file name>
+python pos.py --person_list=<csv containing hindi names> --location_list=<csv containing hindi locations> --organisation_list=<csv containing hindi organization names> --input_file=<input real news csv> --output_file=<output file name> --num_steps=<number of steps at which writing takes place>
 ``` 
 
 ## Fake New Classification
