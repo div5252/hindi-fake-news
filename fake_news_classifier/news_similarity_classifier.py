@@ -98,7 +98,10 @@ class TfidfFeatures():
   def cosine_similarity(self, head, body):
     dot = np.zeros((len(head)))
     for i in range(len(head)):
-      dot[i] = np.dot(head[i], body[i]) / (norm(head[i]) * norm(body[i]))
+        if norm(head[i]) == 0 or norm(body[i]) == 0:
+            dot[i] = 0
+        else:
+            dot[i] = np.dot(head[i], body[i]) / (norm(head[i]) * norm(body[i]))
     return dot
 
 
@@ -115,7 +118,10 @@ class SvdFeatures():
   def cosine_similarity(self, head, body):
     dot = np.zeros((len(head)))
     for i in range(len(head)):
-      dot[i] = np.dot(head[i], body[i]) / (norm(head[i]) * norm(body[i]))
+        if norm(head[i]) == 0 or norm(body[i]) == 0:
+            dot[i] = 0
+        else:
+            dot[i] = np.dot(head[i], body[i]) / (norm(head[i]) * norm(body[i]))
     return dot
 
 
@@ -232,10 +238,10 @@ for i in tqdm(range(len(train))):
 
   train_tfidf_similarity[i] = tf.cosine_similarity(tfidf_train_head, tfidf_train_body)
 
-test_sentiment = np.zeros((len(train),1))
-test_overlap = np.zeros((len(train),1))
-test_normalized_overlap = np.zeros((len(train),1))
-test_tfidf_similarity = np.zeros((len(train),1))
+test_sentiment = np.zeros((len(test),1))
+test_overlap = np.zeros((len(test),1))
+test_normalized_overlap = np.zeros((len(test),1))
+test_tfidf_similarity = np.zeros((len(test),1))
 
 for i in tqdm(range(len(test))):
   article = test[i:i+1]
