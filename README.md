@@ -12,7 +12,7 @@ pip install requirements.txt
 ## Fake News Generation
 
 ### Using NER replacement
-1. Navigate to the fake_news_generation directory
+1. Navigate to the fake_news_generator directory
  ```sh
 cd fake_news_generator
 ```
@@ -22,7 +22,7 @@ python pos.py --input_file=<input real news csv file> --output_file=<output file
 ```
 
 ### Using POS replacement
-1. Navigate to the fake_news_generation directory
+1. Navigate to the fake_news_generator directory
  ```sh
 cd fake_news_generator
 ```
@@ -32,3 +32,23 @@ python ner.py --person_list=<csv containing hindi names> --location_list=<csv co
 ``` 
 
 ## Fake New Classification
+
+### Classification using similarity features
+1. Navigate to the fake_news_classifier directory
+ ```sh
+cd fake_news_generator
+```
+2. Run the news_similarity_classifier.py file
+ ```sh
+python news_similarity_classifier.py --bert_dir=<bert model file for similarity features> --train_file=<train dataset csv> --test_file=<test dataset csv> 
+```
+
+### Classification using BERT
+1. Navigate to the fake_news_classifier directory
+ ```sh
+cd fake_news_generator
+```
+2. Run the bert_classifier.py file
+ ```sh
+python bert_classifier.py --train_data=<train dataset csv> --test_data=<test dataset csv> --save_dir=<output directory> --num_epochs=<number of epochs>
+```
