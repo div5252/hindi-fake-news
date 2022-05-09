@@ -36,7 +36,7 @@ python ner.py --person_list=<csv containing hindi names> --location_list=<csv co
 ### Classification using similarity features
 1. Navigate to the fake_news_classifier directory
  ```sh
-cd fake_news_generator
+cd fake_news_classifier
 ```
 2. Run the news_similarity_classifier.py file
  ```sh
@@ -46,7 +46,7 @@ python news_similarity_classifier.py --bert_dir=<bert model file for similarity 
 ### Classification using BERT
 1. Navigate to the fake_news_classifier directory
  ```sh
-cd fake_news_generator
+cd fake_news_classifier
 ```
 2. Run the bert_classifier.py file
  ```sh
