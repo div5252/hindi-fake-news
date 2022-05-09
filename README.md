@@ -12,15 +12,15 @@ pip install requirements.txt
 ## Fake News Generation
 
 ### Using NER replacement
+
 1. Navigate to the fake_news_generator directory
  ```sh
 cd fake_news_generator
 ```
 2. Run the pos.py script
 ```sh
-python pos.py --input_file=<input real news csv file> --output_file=<output file containing the results>
-```
-
+python ner.py --person_list=<csv containing hindi names> --location_list=<csv containing hindi locations> --organisation_list=<csv containing hindi organization names> --input_file=<input real news csv> --output_file=<output file name> --num_steps=<number of steps at which writing takes place>
+``` 
 ### Using POS replacement
 1. Navigate to the fake_news_generator directory
  ```sh
@@ -28,8 +28,8 @@ cd fake_news_generator
 ```
 2. Run the ner.py script
 ```sh
-python ner.py --person_list=<csv containing hindi names> --location_list=<csv containing hindi locations> --organisation_list=<csv containing hindi organization names> --input_file=<input real news csv> --output_file=<output file name> --num_steps=<number of steps at which writing takes place>
-``` 
+python pos.py --input_file=<input real news csv file> --output_file=<output file containing the results>
+```
 
 ## Fake New Classification
 
