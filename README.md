@@ -3,7 +3,7 @@
 ## Setting up the Repository
 1. Clone the repository
 ```sh
-foo@bar:~$ whoami
+git@github.com:div5252/hindi-fake-news.git
 ```
 2.
 ## Fake News Generation
