@@ -11,6 +11,14 @@ pip install requirements.txt
 ```
 ## Fake News Generation
 
-
+### Using POS replacement
+1. Navigate to the fake_news_generation directory
+ ```sh
+cd fake_news_generation
+```
+2. Run the pos.py script
+```sh
+python pos.py --input_file=<input real news csv file> --output_file=<output file containing the results>
+``` 
 
 ## Fake New Classification
