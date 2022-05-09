@@ -31,7 +31,7 @@ cd fake_news_generator
 python pos.py --input_file=<input real news csv file> --output_file=<output file containing the results>
 ```
 
-## Fake New Classification
+## Fake News Classification
 
 ### Classification using similarity features
 1. Navigate to the fake_news_classifier directory
