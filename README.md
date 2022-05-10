@@ -9,18 +9,43 @@ git clone git@github.com:div5252/hindi-fake-news.git
 ```sh
 pip install requirements.txt
 ```
+## News articles scrapping
+1. Navigate to the news_scrapper directory
+ ```sh
+cd news_scrapper
+```
+2. Make a new directory data where downloaded news article will be stored
+```sh
+mkdir data
+```
+3. Run the navbharat_scrapper.py script
+```sh
+python navbharat_scrapper.py
+``` 
+
 ## Fake News Generation
 
-### Using NER replacement
+### Using Split and Merge
 
 1. Navigate to the fake_news_generator directory
  ```sh
 cd fake_news_generator
 ```
-2. Run the ner.py script
+2. Run the split_and_merge.py script
+```sh
+python split_and_merge.py
+``` 
+ 
+### Using NER replacement
+1. Navigate to the fake_news_generator directory
+ ```sh
+cd fake_news_generator
+```
+2. Run the .py script
 ```sh
 python ner.py --person_list=<csv containing hindi names> --location_list=<csv containing hindi locations> --organisation_list=<csv containing hindi organization names> --input_file=<input real news csv> --output_file=<output file name> --num_steps=<number of steps at which writing takes place>
-``` 
+```
+
 ### Using POS replacement
 1. Navigate to the fake_news_generator directory
  ```sh
