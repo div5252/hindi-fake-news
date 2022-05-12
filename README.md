@@ -25,6 +25,8 @@ python navbharat_scrapper.py
 
 ## Fake News Generation
 
+Link to the dataset - https://drive.google.com/drive/folders/1YoEf0FxC_TNIgVlakFE3HjT0LK9EIkv2?usp=sharing
+
 ### Using Split and Merge
 
 1. Navigate to the fake_news_generator directory
