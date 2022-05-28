@@ -12,14 +12,15 @@ from transformers import MBartForConditionalGeneration, MBart50TokenizerFast
 parser = argparse.ArgumentParser(description='POS fake data generation arguments')
 parser.add_argument('--input_file', type = str, required=True)
 parser.add_argument('--output_file', type = str, required=True)
-
-
+parser.add_argument('--type_dataset', type = str, required=True)
+parser.add_argument('--num_steps', type = int, required=True)
 
 args = vars(parser.parse_args())
 
 input_file  = os.path.abspath(args['input_file'])
 output_file = os.path.abspath(args['output_file'])
-
+type_dataset = args['type_dataset']
+num_steps = args['num_steps']
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
@@ -32,8 +33,8 @@ def start_of_article(article):
   article += " "
   for i in range(min(511, len(article) - 1), 0, -1):
     if article[i] == ' ':
-      break
-  return article[0:i], article[i:]
+      return article[0:i], article[i:]
+  return "", article
 
 def antonym(word):
   antonyms = []
@@ -82,23 +83,31 @@ def tag_replace(text):
                     pass
                 else:
                     anto = antonym(item)
+                    anto = anto.replace('_', ' ')
                     en_text = en_text.replace(item,anto)
     replaced_text = translate(en_text)
     return replaced_text
 
-def pos_replacer(article):
-    start,end = start_of_article(article)
-    replaced = tag_replace(start)
-    return replaced + end
+def pos_replace_complete(article):
+  splits = []
+  if type_dataset == 'bbc':
+    splits = article.split('.')
+  else:
+    splits = article.split('।')
+
+  replaced = ""
+  for i in range(len(splits)):
+    start, end = start_of_article(splits[i])
+    replaced += tag_replace(start) + end + "।"
+  return replaced
 
 dataset = pd.read_csv(input_file, encoding='utf-8')
 
 fake_dataset = dataset
-for i in tqdm(range(29000, len(dataset['body']))):
-  start_part, end_part = start_of_article(dataset['body'][i])
-  fake_dataset['body'][i] = pos_replacer(start_part) + end_part
+for i in tqdm(range(len(dataset['body']))):
+  fake_dataset['body'][i] = pos_replace_complete(dataset['body'][i])
   fake_dataset['label'][i] = 1
-  if i % 100 == 99:
+  if i % num_steps == (num_steps - 1):
     fake_dataset.to_csv(output_file, index=False)
     
 fake_dataset.to_csv(output_file, index=False)

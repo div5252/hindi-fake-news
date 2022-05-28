@@ -90,13 +90,11 @@ def ner_replace_complete(article, per_list, loc_list, org_list):
   if type_dataset == 'bbc':
     splits = article.split('.')
   else:
-    splits = article.split('|')
+    splits = article.split('।')
 
   ner_list = []
   for i in range(len(splits)):
     start = start_of_article(splits[i])
-    if len(start) == 0:
-      print(splits[i])
     ner_list += ner(start)
 
   replaced = ner_replace(article, ner_list, per_list, loc_list, org_list)
