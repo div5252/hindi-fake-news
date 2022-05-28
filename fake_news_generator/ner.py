@@ -13,6 +13,7 @@ parser.add_argument('--location_list', type = str, required=True)
 parser.add_argument('--organisation_list', type = str, required=True)
 parser.add_argument('--input_file', type = str, required=True)
 parser.add_argument('--output_file', type = str, required=True)
+parser.add_argument('--type_dataset', type = str, required=True)
 parser.add_argument('--num_steps', type = int, required=True)
 
 args = vars(parser.parse_args())
@@ -22,6 +23,7 @@ location_list = os.path.abspath(args['location_list'])
 organisation_list = os.path.abspath(args['organisation_list'])
 input_file = os.path.abspath(args['input_file'])
 output_file = os.path.abspath(args['output_file'])
+type_dataset = args['type_dataset']
 num_steps = args['num_steps']
 
 def ner(example):
@@ -59,10 +61,11 @@ def ner(example):
         ner_results_grouped.append({'entity':curr_token,'start':curr_start,'end':curr_end,'word':curr_word})
     return ner_results_grouped
 
-def ner_replace(article, per_list, loc_list, org_list):
-  ner_list = ner(article)
+def ner_replace(article, ner_list, per_list, loc_list, org_list):
   replaced_article = article
   for ele in ner_list:
+    if ele['word'].count(' ') > 2:
+      continue
     if ele['entity'] == 'PER':
       index = random.randrange(len(per_list))
       replaced_article = replaced_article.replace(ele['word'], per_list[index])
@@ -79,9 +82,25 @@ def start_of_article(article):
   article += " "
   for i in range(min(511, len(article) - 1), 0, -1):
     if article[i] == ' ':
-      break
-  return article[0:i], article[i:]
-    
+      return article[0:i]
+  return ""
+
+def ner_replace_complete(article, per_list, loc_list, org_list):
+  splits = []
+  if type_dataset == 'bbc':
+    splits = article.split('.')
+  else:
+    splits = article.split('|')
+
+  ner_list = []
+  for i in range(len(splits)):
+    start = start_of_article(splits[i])
+    if len(start) == 0:
+      print(splits[i])
+    ner_list += ner(start)
+
+  replaced = ner_replace(article, ner_list, per_list, loc_list, org_list)
+  return replaced
     
 tokenizer = AutoTokenizer.from_pretrained("jplu/tf-xlm-r-ner-40-lang")
 model = AutoModelForTokenClassification.from_pretrained("jplu/tf-xlm-r-ner-40-lang",from_tf=True)
@@ -99,8 +118,7 @@ dataset = pd.read_csv(input_file, encoding='utf-8')
 
 fake_dataset = dataset
 for i in tqdm(range(len(dataset['body']))):
-  start_part, end_part = start_of_article(dataset['body'][i])
-  fake_dataset['body'][i] = ner_replace(start_part, per_list, loc_list, org_list) + end_part
+  fake_dataset['body'][i] = ner_replace_complete(dataset['body'][i], per_list, loc_list, org_list)
   fake_dataset['label'][i] = 1
   if i % num_steps == (num_steps - 1):
     fake_dataset.to_csv(output_file, index=False)
