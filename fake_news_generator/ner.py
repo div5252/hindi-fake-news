@@ -82,8 +82,8 @@ def start_of_article(article):
   article += " "
   for i in range(min(511, len(article) - 1), 0, -1):
     if article[i] == ' ':
-      return article[0:i]
-  return ""
+      return article[0:i], article[i:]
+  return "", article
 
 def ner_replace_complete(article, per_list, loc_list, org_list):
   splits = []
@@ -94,7 +94,7 @@ def ner_replace_complete(article, per_list, loc_list, org_list):
 
   ner_list = []
   for i in range(len(splits)):
-    start = start_of_article(splits[i])
+    start, _ = start_of_article(splits[i])
     ner_list += ner(start)
 
   replaced = ner_replace(article, ner_list, per_list, loc_list, org_list)
