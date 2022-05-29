@@ -119,6 +119,7 @@ for i in tqdm(range(len(dataset['body']))):
   fake_dataset['body'][i] = ner_replace_complete(dataset['body'][i], per_list, loc_list, org_list)
   fake_dataset['label'][i] = 1
   if i % num_steps == (num_steps - 1):
-    fake_dataset.to_csv(output_file, index=False)
+    fake_dataset_i = fake_dataset[0:i]
+    fake_dataset_i.to_csv(output_file, index=False)
     
 fake_dataset.to_csv(output_file, index=False)

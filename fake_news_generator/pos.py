@@ -108,6 +108,7 @@ for i in tqdm(range(len(dataset['body']))):
   fake_dataset['body'][i] = pos_replace_complete(dataset['body'][i])
   fake_dataset['label'][i] = 1
   if i % num_steps == (num_steps - 1):
-    fake_dataset.to_csv(output_file, index=False)
+    fake_dataset_i = fake_dataset[0:i]
+    fake_dataset_i.to_csv(output_file, index=False)
     
 fake_dataset.to_csv(output_file, index=False)
