@@ -130,8 +130,8 @@ def dt_classifier(X_train, y_train, X_test, y_test):
   dt = DecisionTreeClassifier()
   dt.fit(X_train, y_train)
   dt_predicted = dt.predict(X_test)
-  print("Accuracy using Decision Tree is", accuracy_score(y_test, dt_predicted), "\n")
-  print("F1-score using Decision Tree is", f1_score(y_test, dt_predicted, average=None), "\n")
+  results_file.write("Accuracy using Decision Tree is " + str(accuracy_score(y_test, dt_predicted)) + "\n")
+  results_file.write("F1-score using Decision Tree is " + str(f1_score(y_test, dt_predicted, average=None)) + "\n")
 
 
 # Classification using SVM
@@ -139,8 +139,8 @@ def svm_classifier(X_train, y_train, X_test, y_test):
   svm = LinearSVC(max_iter=10000)
   svm.fit(X_train, y_train)
   svm_predicted = svm.predict(X_test)
-  print("Accuracy using SVM is", accuracy_score(y_test, svm_predicted), "\n") 
-  print("F1-score using SVM is", f1_score(y_test, svm_predicted, average=None), "\n") 
+  results_file.write("Accuracy using SVM is " + str(accuracy_score(y_test, svm_predicted)) + "\n") 
+  results_file.write("F1-score using SVM is " + str(f1_score(y_test, svm_predicted, average=None)) + "\n") 
 
 
 # Classification using AdaBoost
@@ -148,18 +148,18 @@ def adaboost_classifier(X_train, y_train, X_test, y_test):
   ada = AdaBoostClassifier()
   ada.fit(X_train, y_train)
   ada_predicted = ada.predict(X_test)
-  print("Accuracy using AdaBoost is", accuracy_score(y_test, ada_predicted), "\n")
-  print("F1-score using AdaBoost is", f1_score(y_test, ada_predicted, average=None), "\n")
+  results_file.write("Accuracy using AdaBoost is " + str(accuracy_score(y_test, ada_predicted)) + "\n")
+  results_file.write("F1-score using AdaBoost is " + str(f1_score(y_test, ada_predicted, average=None)) + "\n")
 
 # Classification using bagging
 def bagging_classifier(X_train, y_train, X_test, y_test):
   bag = BaggingClassifier()
   bag.fit(X_train, y_train)
   bag_predicted = bag.predict(X_test)
-  print("Accuracy using Bagging is", accuracy_score(y_test, bag_predicted), "\n")
-  print("F1-score using Bagging is", f1_score(y_test, bag_predicted, average=None), "\n")
+  results_file.write("Accuracy using Bagging is " + str(accuracy_score(y_test, bag_predicted)) + "\n")
+  results_file.write("F1-score using Bagging is " + str(f1_score(y_test, bag_predicted, average=None)) + "\n")
 
-
+# Classification using XGBoost
 def xgboost_classifier(X_train, y_train, X_test, y_test):
   D_train = xgb.DMatrix(X_train, label=y_train)
   D_test = xgb.DMatrix(X_test, label=y_test)
@@ -177,164 +177,169 @@ def xgboost_classifier(X_train, y_train, X_test, y_test):
   preds = model.predict(D_test)
   best_preds = np.asarray([np.argmax(line) for line in preds])
 
-  print("Accuracy using xgb is", accuracy_score(y_test, best_preds), "\n")
-  print("F1-score using xgb is", f1_score(y_test, best_preds, average=None), "\n")
+  results_file.write("Accuracy using xgb is" + str(accuracy_score(y_test, best_preds)) + "\n")
+  results_file.write("F1-score using xgb is" + str(f1_score(y_test, best_preds, average=None)) + "\n")
 
+def return_features(df):
+  combine_head_body(df)
+  if use_sentiment_features:
+    sentiment_features = np.zeros((len(df),1))
+  overlap = np.zeros((len(df),1))
+  normalized_overlap = np.zeros((len(df),1))
+  tfidf_similarity = np.zeros((len(df),1))
+
+  for i in tqdm(range(len(df))):
+    article = df[i:i+1]
+
+    if use_sentiment_features:
+      sentiment = SentimentFeatures()
+      bert = sentiment.model(bert_dir)
+      sentiment_head, _ = bert.predict(list(article['heading']))
+      sentiment_body, _ = bert.predict(list(article['body']))
+
+      sentiment_features[i] = sentiment.similarity(sentiment_head, sentiment_body)
+        
+    cf = CountFeatures()
+    fit = cf.fit(article['combined'])
+    count_head = cf.count_vec(fit, article['heading'])
+    count_body = cf.count_vec(fit, article['body'])
+
+    overlap[i] = cf.overlap(count_head, count_body)
+    normalized_overlap[i] = cf.normalized_overlap(count_head, count_body)
+
+
+    tf = TfidfFeatures()
+    fit = tf.fit(article['combined'])
+    tfidf_combined = tf.tfidf_vec(fit, article['combined'])
+    tfidf_head = tf.tfidf_vec(fit, article['heading'])
+    tfidf_body = tf.tfidf_vec(fit, article['body'])
+
+    tfidf_similarity[i] = tf.cosine_similarity(tfidf_head, tfidf_body)
+
+  if use_sentiment_features:
+    combined_features = np.concatenate((sentiment_features, overlap, normalized_overlap, tfidf_similarity), axis=1)
+    return sentiment_features, overlap, normalized_overlap, tfidf_similarity, combined_features
+  else:
+    combined_features = np.concatenate((overlap, normalized_overlap, tfidf_similarity), axis=1)
+    return overlap, normalized_overlap, tfidf_similarity, combined_features
+
+
+def run_classifiers(train_overlap, train_normalized_overlap, train_tfidf_similarity, train_combined_features, test_overlap, test_normalized_overlap, test_tfidf_similarity, test_combined_features, str, train_sentiment=None, test_sentiment=None):
+  results_file.write("\n\nON " + str + " SET:\n\n")
+
+  results_file.write("Decision Tree Classifier\n")
+  if use_sentiment_features:
+    results_file.write("Using Sentiment features overlap -\n")
+    dt_classifier(train_sentiment, train['label'], test_sentiment, test['label'])
+  results_file.write("Using Count features overlap -\n")
+  dt_classifier(train_overlap, train['label'], test_overlap, test['label'])
+  results_file.write("Using Count features normalized overlap -\n")
+  dt_classifier(train_normalized_overlap, train['label'], test_normalized_overlap, test['label'])
+  results_file.write("Using Tfidf features -\n")
+  dt_classifier(train_tfidf_similarity, train['label'], test_tfidf_similarity, test['label'])
+  results_file.write("Combining all features -\n")
+  dt_classifier(train_combined_features, train['label'], test_combined_features, test['label'])
+
+
+  results_file.write("\n\nSVM Classifier\n")
+  if use_sentiment_features:
+    results_file.write("Using Sentiment features overlap -\n")
+    svm_classifier(train_sentiment, train['label'], test_sentiment, test['label'])
+  results_file.write("Using Count features overlap -\n")
+  svm_classifier(train_overlap, train['label'], test_overlap, test['label'])
+  results_file.write("Using Count features normalized overlap -\n")
+  svm_classifier(train_normalized_overlap, train['label'], test_normalized_overlap, test['label'])
+  results_file.write("Using Tfidf features -\n")
+  svm_classifier(train_tfidf_similarity, train['label'], test_tfidf_similarity, test['label'])
+  results_file.write("Combining all features -\n")
+  svm_classifier(train_combined_features, train['label'], test_combined_features, test['label'])
+
+
+  results_file.write("\n\nAdaboost Classifier\n")
+  if use_sentiment_features:
+    results_file.write("Using Sentiment features overlap -\n")
+    adaboost_classifier(train_sentiment, train['label'], test_sentiment, test['label'])
+  results_file.write("Using Count features overlap -\n")
+  adaboost_classifier(train_overlap, train['label'], test_overlap, test['label'])
+  results_file.write("Using Count features normalized overlap -\n")
+  adaboost_classifier(train_normalized_overlap, train['label'], test_normalized_overlap, test['label'])
+  results_file.write("Using Tfidf features -\n")
+  adaboost_classifier(train_tfidf_similarity, train['label'], test_tfidf_similarity, test['label'])
+  results_file.write("Combining all features -\n")
+  adaboost_classifier(train_combined_features, train['label'], test_combined_features, test['label'])
+
+
+  results_file.write("\n\nBagging Classifier\n")
+  if use_sentiment_features:
+    results_file.write("Using Sentiment features overlap -\n")
+    bagging_classifier(train_sentiment, train['label'], test_sentiment, test['label'])
+  results_file.write("Using Count features overlap -\n")
+  bagging_classifier(train_overlap, train['label'], test_overlap, test['label'])
+  results_file.write("Using Count features normalized overlap -\n")
+  bagging_classifier(train_normalized_overlap, train['label'], test_normalized_overlap, test['label'])
+  results_file.write("Using Tfidf features -\n")
+  bagging_classifier(train_tfidf_similarity, train['label'], test_tfidf_similarity, test['label'])
+  results_file.write("Combining all features -\n")
+  bagging_classifier(train_combined_features, train['label'], test_combined_features, test['label'])
+
+
+  results_file.write("\n\nXGBoost Classifier\n")
+  if use_sentiment_features:
+    results_file.write("Using Sentiment features overlap -\n")
+    xgboost_classifier(train_sentiment, train['label'], test_sentiment, test['label'])
+  results_file.write("Using Count features overlap -\n")
+  xgboost_classifier(train_overlap, train['label'], test_overlap, test['label'])
+  results_file.write("Using Count features normalized overlap -\n")
+  xgboost_classifier(train_normalized_overlap, train['label'], test_normalized_overlap, test['label'])
+  results_file.write("Using Tfidf features -\n")
+  xgboost_classifier(train_tfidf_similarity, train['label'], test_tfidf_similarity, test['label'])
+  results_file.write("Combining all features -\n")
+  xgboost_classifier(train_combined_features, train['label'], test_combined_features, test['label'])
+  
 
 # Main code
 parser = argparse.ArgumentParser(description='News similarity classifier Arguments')
-parser.add_argument('--bert_dir', type = str, required=True)
-parser.add_argument('--train_file', type = str, required=True)
-parser.add_argument('--test_file', type = str, required=True)
+parser.add_argument('--train_path', type = str, required=True)
+parser.add_argument('--dev_path', type = str, required=True)
+parser.add_argument('--test_path', type = str, required=True)
+parser.add_argument('--gold_path', type = str, required=True)
+parser.add_argument('--results_path', type = str, required=True)
+parser.add_argument('--use_sentiment_features', type = int, default=0, required=False)
+parser.add_argument('--bert_dir', type = str, required=False)
 
 args = vars(parser.parse_args())
 
-bert_dir  = os.path.abspath(args['bert_dir'])
-train_file = os.path.abspath(args['train_file'])
-test_file = os.path.abspath(args['test_file'])
-
-
-train_path = train_file
-test_path = test_file
+train_path = os.path.abspath(args['train_path'])
+dev_path = os.path.abspath(args['dev_path'])
+test_path = os.path.abspath(args['test_path'])
+gold_path = os.path.abspath(args['gold_path'])
+results_path = os.path.abspath(args['results_path'])
+use_sentiment_features = int(args['use_sentiment_features'])
+if use_sentiment_features:
+  bert_dir  = os.path.abspath(args['bert_dir'])
 
 train = pd.read_csv(train_path)
+dev = pd.read_csv(dev_path)
 test = pd.read_csv(test_path)
+gold = pd.read_csv(gold_path)
 
-n_train = train.shape[0]
-n_test = test.shape[0]
-    
-combine_head_body(train)
-combine_head_body(test)
+results_file = open(results_path, 'a')
 
-train_sentiment = np.zeros((len(train),1))
-train_overlap = np.zeros((len(train),1))
-train_normalized_overlap = np.zeros((len(train),1))
-train_tfidf_similarity = np.zeros((len(train),1))
+if use_sentiment_features:
+  train_sentiment, train_overlap, train_normalized_overlap, train_tfidf_similarity, train_combined_features = return_features(train)
+  dev_sentiment, dev_overlap, dev_normalized_overlap, dev_tfidf_similarity, dev_combined_features = return_features(dev)
+  test_sentiment, test_overlap, test_normalized_overlap, test_tfidf_similarity, test_combined_features = return_features(test)
+  gold_sentiment, gold_overlap, gold_normalized_overlap, gold_tfidf_similarity, gold_combined_features = return_features(gold)
 
-for i in tqdm(range(len(train))):
-  article = train[i:i+1]
+  run_classifiers(train_overlap, train_normalized_overlap, train_tfidf_similarity, train_combined_features, dev_overlap, dev_normalized_overlap, dev_tfidf_similarity, dev_combined_features, "DEV", train_sentiment, dev_sentiment)
+  run_classifiers(train_overlap, train_normalized_overlap, train_tfidf_similarity, train_combined_features, test_overlap, test_normalized_overlap, test_tfidf_similarity, test_combined_features, "TEST", train_sentiment, test_sentiment)
+  run_classifiers(train_overlap, train_normalized_overlap, train_tfidf_similarity, train_combined_features, gold_overlap, gold_normalized_overlap, gold_tfidf_similarity, gold_combined_features, "GOLD", train_sentiment, gold_sentiment)
+else:
+  train_overlap, train_normalized_overlap, train_tfidf_similarity, train_combined_features = return_features(train)
+  dev_overlap, dev_normalized_overlap, dev_tfidf_similarity, dev_combined_features = return_features(dev)
+  test_overlap, test_normalized_overlap, test_tfidf_similarity, test_combined_features = return_features(test)
+  gold_overlap, gold_normalized_overlap, gold_tfidf_similarity, gold_combined_features = return_features(gold)
 
-  sentiment = SentimentFeatures()
-  bert = sentiment.model(bert_dir)
-  sentiment_train_head, _ = bert.predict(list(article['heading']))
-  sentiment_train_body, _ = bert.predict(list(article['body']))
-
-  train_sentiment[i] = sentiment.similarity(sentiment_train_head, sentiment_train_body)
-      
-  cf = CountFeatures()
-  fit = cf.fit(article['combined'])
-  count_train_head = cf.count_vec(fit, article['heading'])
-  count_train_body = cf.count_vec(fit, article['body'])
-
-  train_overlap[i] = cf.overlap(count_train_head, count_train_body)
-  train_normalized_overlap[i] = cf.normalized_overlap(count_train_head, count_train_body)
-
-
-  tf = TfidfFeatures()
-  fit = tf.fit(article['combined'])
-  tfidf_combined = tf.tfidf_vec(fit, article['combined'])
-  tfidf_train_head = tf.tfidf_vec(fit, article['heading'])
-  tfidf_train_body = tf.tfidf_vec(fit, article['body'])
-
-  train_tfidf_similarity[i] = tf.cosine_similarity(tfidf_train_head, tfidf_train_body)
-
-test_sentiment = np.zeros((len(test),1))
-test_overlap = np.zeros((len(test),1))
-test_normalized_overlap = np.zeros((len(test),1))
-test_tfidf_similarity = np.zeros((len(test),1))
-
-for i in tqdm(range(len(test))):
-  article = test[i:i+1]
-
-  sentiment = SentimentFeatures(bert_dir)
-  bert = sentiment.model(bert_dir)
-  sentiment_test_head, _ = bert.predict(list(article['heading']))
-  sentiment_test_body, _ = bert.predict(list(article['body']))
-
-  test_sentiment[i] = sentiment.similarity(sentiment_test_head, sentiment_test_body)
-
-      
-  cf = CountFeatures()
-  fit = cf.fit(article['combined'])
-  count_test_head = cf.count_vec(fit, article['heading'])
-  count_test_body = cf.count_vec(fit, article['body'])
-
-  test_overlap[i] = cf.overlap(count_test_head, count_test_body)
-  test_normalized_overlap[i] = cf.normalized_overlap(count_test_head, count_test_body)
-
-
-  tf = TfidfFeatures()
-  fit = tf.fit(article['combined'])
-  tfidf_combined = tf.tfidf_vec(fit, article['combined'])
-  tfidf_test_head = tf.tfidf_vec(fit, article['heading'])
-  tfidf_test_body = tf.tfidf_vec(fit, article['body'])
-
-  test_tfidf_similarity[i] = tf.cosine_similarity(tfidf_test_head, tfidf_test_body)
-
-
-train_combined_features = np.concatenate((train_sentiment, train_overlap, train_normalized_overlap, train_tfidf_similarity), axis=1)
-test_combined_features = np.concatenate((test_sentiment, test_overlap, test_normalized_overlap, test_tfidf_similarity), axis=1)
-
-print("\n\nDecision Tree -")
-print("Using Sentiment features overlap -")
-dt_classifier(train_sentiment, train['label'], test_sentiment, test['label'])
-print("Using Count features overlap -")
-dt_classifier(train_overlap, train['label'], test_overlap, test['label'])
-print("Using Count features normalized overlap -")
-dt_classifier(train_normalized_overlap, train['label'], test_normalized_overlap, test['label'])
-print("Using Tfidf features -")
-dt_classifier(train_tfidf_similarity, train['label'], test_tfidf_similarity, test['label'])
-print("Combining all features - ")
-dt_classifier(train_combined_features, train['label'], test_combined_features, test['label'])
-
-
-print("\n\nSVM -")
-print("Using Sentiment features overlap -")
-svm_classifier(train_sentiment, train['label'], test_sentiment, test['label'])
-print("Using Count features overlap -")
-svm_classifier(train_overlap, train['label'], test_overlap, test['label'])
-print("Using Count features normalized overlap -")
-svm_classifier(train_normalized_overlap, train['label'], test_normalized_overlap, test['label'])
-print("Using Tfidf features -")
-svm_classifier(train_tfidf_similarity, train['label'], test_tfidf_similarity, test['label'])
-print("Combining all features - ")
-svm_classifier(train_combined_features, train['label'], test_combined_features, test['label'])
-
-
-print("\n\nAdaboost -")
-print("Using Sentiment features overlap -")
-adaboost_classifier(train_sentiment, train['label'], test_sentiment, test['label'])
-print("Using Count features overlap -")
-adaboost_classifier(train_overlap, train['label'], test_overlap, test['label'])
-print("Using Count features normalized overlap -")
-adaboost_classifier(train_normalized_overlap, train['label'], test_normalized_overlap, test['label'])
-print("Using Tfidf features -")
-adaboost_classifier(train_tfidf_similarity, train['label'], test_tfidf_similarity, test['label'])
-print("Combining all features - ")
-adaboost_classifier(train_combined_features, train['label'], test_combined_features, test['label'])
-
-
-print("\n\nBagging -")
-print("Using Sentiment features overlap -")
-bagging_classifier(train_sentiment, train['label'], test_sentiment, test['label'])
-print("Using Count features overlap -")
-bagging_classifier(train_overlap, train['label'], test_overlap, test['label'])
-print("Using Count features normalized overlap -")
-bagging_classifier(train_normalized_overlap, train['label'], test_normalized_overlap, test['label'])
-print("Using Tfidf features -")
-bagging_classifier(train_tfidf_similarity, train['label'], test_tfidf_similarity, test['label'])
-print("Combining all features - ")
-bagging_classifier(train_combined_features, train['label'], test_combined_features, test['label'])
-
-
-print("\n\nXGBoost -")
-print("Using Sentiment features overlap -")
-xgboost_classifier(train_sentiment, train['label'], test_sentiment, test['label'])
-print("Using Count features overlap -")
-xgboost_classifier(train_overlap, train['label'], test_overlap, test['label'])
-print("Using Count features normalized overlap -")
-xgboost_classifier(train_normalized_overlap, train['label'], test_normalized_overlap, test['label'])
-print("Using Tfidf features -")
-xgboost_classifier(train_tfidf_similarity, train['label'], test_tfidf_similarity, test['label'])
-print("Combining all features - ")
-xgboost_classifier(train_combined_features, train['label'], test_combined_features, test['label'])
+  run_classifiers(train_overlap, train_normalized_overlap, train_tfidf_similarity, train_combined_features, dev_overlap, dev_normalized_overlap, dev_tfidf_similarity, dev_combined_features, "DEV")
+  run_classifiers(train_overlap, train_normalized_overlap, train_tfidf_similarity, train_combined_features, test_overlap, test_normalized_overlap, test_tfidf_similarity, test_combined_features, "TEST")
+  run_classifiers(train_overlap, train_normalized_overlap, train_tfidf_similarity, train_combined_features, gold_overlap, gold_normalized_overlap, gold_tfidf_similarity, gold_combined_features, "GOLD")
