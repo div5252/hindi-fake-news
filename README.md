@@ -67,7 +67,7 @@ cd fake_news_classifier
 ```
 2. Run the news_similarity_classifier.py file
  ```sh
-python news_similarity_classifier.py --bert_dir=<bert model file for similarity features> --train_file=<train dataset csv> --test_file=<test dataset csv> 
+python news_similarity_classifier.py --train_path=<train dataset csv> --dev_path=<dev dataset csv> --test_path=<test dataset csv> --gold_path=<gold dataset csv> --result_path=<output text file> [--use_sentiment_features=<whether use sentiment features or not>] [--bert_dir=<bert model file for similarity features>] 
 ```
 
 ### Classification using BERT
