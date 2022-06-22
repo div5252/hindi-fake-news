@@ -240,7 +240,7 @@ def return_features(df):
         return overlap, normalized_overlap, tfidf_similarity, combined_features
 
 
-def run_classifiers(train_overlap, train_normalized_overlap, train_tfidf_similarity, train_combined_features, test_overlap, test_normalized_overlap, test_tfidf_similarity, test_combined_features, str, train_sentiment=None, test_sentiment=None):
+def run_classifiers(train, train_overlap, train_normalized_overlap, train_tfidf_similarity, train_combined_features, test, test_overlap, test_normalized_overlap, test_tfidf_similarity, test_combined_features, str, train_sentiment=None, test_sentiment=None):
     results_file.write("\n\nON " + str + " SET:\n\n")
 
     results_file.write("Decision Tree Classifier\n")
@@ -388,9 +388,9 @@ else:
     gold_overlap, gold_normalized_overlap, gold_tfidf_similarity, gold_combined_features = return_features(
         gold)
 
-    run_classifiers(train_overlap, train_normalized_overlap, train_tfidf_similarity, train_combined_features,
-                    dev_overlap, dev_normalized_overlap, dev_tfidf_similarity, dev_combined_features, "DEV")
-    run_classifiers(train_overlap, train_normalized_overlap, train_tfidf_similarity, train_combined_features,
-                    test_overlap, test_normalized_overlap, test_tfidf_similarity, test_combined_features, "TEST")
-    run_classifiers(train_overlap, train_normalized_overlap, train_tfidf_similarity, train_combined_features,
-                    gold_overlap, gold_normalized_overlap, gold_tfidf_similarity, gold_combined_features, "GOLD")
+    run_classifiers(train, train_overlap, train_normalized_overlap, train_tfidf_similarity, train_combined_features,
+                    dev, dev_overlap, dev_normalized_overlap, dev_tfidf_similarity, dev_combined_features, "DEV")
+    run_classifiers(train, train_overlap, train_normalized_overlap, train_tfidf_similarity, train_combined_features,
+                    test, test_overlap, test_normalized_overlap, test_tfidf_similarity, test_combined_features, "TEST")
+    run_classifiers(train, train_overlap, train_normalized_overlap, train_tfidf_similarity, train_combined_features,
+                    gold, gold_overlap, gold_normalized_overlap, gold_tfidf_similarity, gold_combined_features, "GOLD")
