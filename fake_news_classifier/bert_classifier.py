@@ -1,5 +1,6 @@
 import transformers
-from datasets import load_dataset, load_metric
+from datasets import load_dataset
+import evaluate
 from transformers import AutoModelForSequenceClassification, TrainingArguments, Trainer
 from transformers import AutoTokenizer
 import datasets
@@ -34,8 +35,9 @@ num_labels = 2
 dataset = load_dataset('csv', data_files={'train': [train_file],
                                           'test': [test_file]})
 
-print(dataset["train"][0])
 tokenizer = AutoTokenizer.from_pretrained(model_checkpoint)
+
+data_collator = DataCollatorWithPadding(tokenizer=tokenizer)
 
 
 def preprocess_function(example):
@@ -61,8 +63,8 @@ args = TrainingArguments(
 
 
 def compute_metrics(eval_pred):
-    load_accuracy = load_metric("accuracy")
-    load_f1 = load_metric("f1")
+    load_accuracy = evaluate.load("accuracy")
+    load_f1 = evaluate.load("f1")
 
     logits, labels = eval_pred
     predictions = np.argmax(logits, axis=-1)

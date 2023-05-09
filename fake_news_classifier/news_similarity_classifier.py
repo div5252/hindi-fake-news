@@ -306,7 +306,8 @@ def run_classifiers(train, train_overlap, train_normalized_overlap, train_tfidf_
 parser = argparse.ArgumentParser(
     description='News similarity classifier Arguments')
 parser.add_argument('--train_path', type=str, required=True)
-parser.add_argument('--dev_path', type=str, required=True)
+parser.add_argument('--use_dev', type=int, default=0)
+parser.add_argument('--dev_path', type=str, required=False, default='')
 parser.add_argument('--test_path', type=str, required=True)
 parser.add_argument('--gold_path', type=str, required=True)
 parser.add_argument('--results_path', type=str, required=True)
@@ -322,17 +323,23 @@ test_path = os.path.abspath(args['test_path'])
 gold_path = os.path.abspath(args['gold_path'])
 results_path = os.path.abspath(args['results_path'])
 use_sentiment_features = int(args['use_sentiment_features'])
+use_dev = int(args['use_dev'])
 if use_sentiment_features:
     bert_dir = os.path.abspath(args['bert_dir'])
 
 train = pd.read_csv(train_path)
-dev = pd.read_csv(dev_path)
+if use_dev == 1:
+    dev = pd.read_csv(dev_path)
 test = pd.read_csv(test_path)
 gold = pd.read_csv(gold_path)
 
-combined = pd.concat([train, dev, test, gold], ignore_index=True)
+if use_dev == 1:
+    combined = pd.concat([train, dev, test, gold], ignore_index=True)
+else:
+    combined = pd.concat([train, test, gold], ignore_index=True)
 combine_head_body(train)
-combine_head_body(dev)
+if use_dev == 1:
+    combine_head_body(dev)
 combine_head_body(test)
 combine_head_body(gold)
 combine_head_body(combined)
@@ -342,8 +349,9 @@ if use_sentiment_features:
     bert = sentiment.model(bert_dir)
     sentiment_train_head, _ = bert.predict(list(train['heading']))
     sentiment_train_body, _ = bert.predict(list(train['body']))
-    sentiment_dev_head, _ = bert.predict(list(dev['heading']))
-    sentiment_dev_body, _ = bert.predict(list(dev['body']))
+    if use_dev == 1:
+        sentiment_dev_head, _ = bert.predict(list(dev['heading']))
+        sentiment_dev_body, _ = bert.predict(list(dev['body']))
     sentiment_test_head, _ = bert.predict(list(test['heading']))
     sentiment_test_body, _ = bert.predict(list(test['body']))
     sentiment_gold_head, _ = bert.predict(list(gold['heading']))
@@ -351,7 +359,8 @@ if use_sentiment_features:
 
     train_sentiment = sentiment.similarity(
         sentiment_train_head, sentiment_train_body)
-    dev_sentiment = sentiment.similarity(
+    if use_dev == 1:
+        dev_sentiment = sentiment.similarity(
         sentiment_dev_head, sentiment_dev_body)
     test_sentiment = sentiment.similarity(
         sentiment_test_head, sentiment_test_body)
@@ -362,8 +371,9 @@ cf = CountFeatures()
 fit = cf.fit(combined['combined'])
 count_train_head = cf.count_vec(fit, train['heading'])
 count_train_body = cf.count_vec(fit, train['body'])
-count_dev_head = cf.count_vec(fit, dev['heading'])
-count_dev_body = cf.count_vec(fit, dev['body'])
+if use_dev == 1:
+    count_dev_head = cf.count_vec(fit, dev['heading'])
+    count_dev_body = cf.count_vec(fit, dev['body'])
 count_test_head = cf.count_vec(fit, test['heading'])
 count_test_body = cf.count_vec(fit, test['body'])
 count_gold_head = cf.count_vec(fit, gold['heading'])
@@ -372,8 +382,9 @@ count_gold_body = cf.count_vec(fit, gold['body'])
 train_overlap = cf.overlap(count_train_head, count_train_body)
 train_normalized_overlap = cf.normalized_overlap(
     count_train_head, count_train_body)
-dev_overlap = cf.overlap(count_dev_head, count_dev_body)
-dev_normalized_overlap = cf.normalized_overlap(count_dev_head, count_dev_body)
+if use_dev == 1:
+    dev_overlap = cf.overlap(count_dev_head, count_dev_body)
+    dev_normalized_overlap = cf.normalized_overlap(count_dev_head, count_dev_body)
 test_overlap = cf.overlap(count_test_head, count_test_body)
 test_normalized_overlap = cf.normalized_overlap(
     count_test_head, count_test_body)
@@ -386,8 +397,9 @@ fit = tf.fit(combined['combined'])
 tfidf_combined = tf.tfidf_vec(fit, combined['combined'])
 tfidf_train_head = tf.tfidf_vec(fit, train['heading'])
 tfidf_train_body = tf.tfidf_vec(fit, train['body'])
-tfidf_dev_head = tf.tfidf_vec(fit, dev['heading'])
-tfidf_dev_body = tf.tfidf_vec(fit, dev['body'])
+if use_dev == 1:
+    tfidf_dev_head = tf.tfidf_vec(fit, dev['heading'])
+    tfidf_dev_body = tf.tfidf_vec(fit, dev['body'])
 tfidf_test_head = tf.tfidf_vec(fit, test['heading'])
 tfidf_test_body = tf.tfidf_vec(fit, test['body'])
 tfidf_gold_head = tf.tfidf_vec(fit, gold['heading'])
@@ -395,7 +407,8 @@ tfidf_gold_body = tf.tfidf_vec(fit, gold['body'])
 
 train_tfidf_similarity = tf.cosine_similarity(
     tfidf_train_head, tfidf_train_body)
-dev_tfidf_similarity = tf.cosine_similarity(tfidf_dev_head, tfidf_dev_body)
+if use_dev == 1:
+    dev_tfidf_similarity = tf.cosine_similarity(tfidf_dev_head, tfidf_dev_body)
 test_tfidf_similarity = tf.cosine_similarity(tfidf_test_head, tfidf_test_body)
 gold_tfidf_similarity = tf.cosine_similarity(tfidf_gold_head, tfidf_gold_body)
 
@@ -403,8 +416,9 @@ sf = SvdFeatures()
 fit = sf.fit(tfidf_combined)
 svd_train_head = sf.svd_vec(fit, tfidf_train_head)
 svd_train_body = sf.svd_vec(fit, tfidf_train_body)
-svd_dev_head = sf.svd_vec(fit, tfidf_dev_head)
-svd_dev_body = sf.svd_vec(fit, tfidf_dev_body)
+if use_dev == 1:
+    svd_dev_head = sf.svd_vec(fit, tfidf_dev_head)
+    svd_dev_body = sf.svd_vec(fit, tfidf_dev_body)
 svd_test_head = sf.svd_vec(fit, tfidf_test_head)
 svd_test_body = sf.svd_vec(fit, tfidf_test_body)
 svd_gold_head = sf.svd_vec(fit, tfidf_gold_head)
@@ -412,7 +426,8 @@ svd_gold_body = sf.svd_vec(fit, tfidf_gold_body)
 
 train_svd_similarity = np.asarray(
     sf.cosine_similarity(svd_train_head, svd_train_body))
-dev_svd_similarity = np.asarray(
+if use_dev == 1:
+    dev_svd_similarity = np.asarray(
     sf.cosine_similarity(svd_dev_head, svd_dev_body))
 test_svd_similarity = np.asarray(
     sf.cosine_similarity(svd_test_head, svd_test_body))
@@ -422,7 +437,8 @@ gold_svd_similarity = np.asarray(
 if use_sentiment_features:
     train_combined_features = np.concatenate(
         (train_sentiment, train_overlap, train_normalized_overlap, train_tfidf_similarity), axis=1)
-    dev_combined_features = np.concatenate(
+    if use_dev == 1:
+        dev_combined_features = np.concatenate(
         (dev_sentiment, dev_overlap, dev_normalized_overlap, dev_tfidf_similarity), axis=1)
     test_combined_features = np.concatenate(
         (test_sentiment, test_overlap, test_normalized_overlap, test_tfidf_similarity), axis=1)
@@ -431,7 +447,8 @@ if use_sentiment_features:
 else:
     train_combined_features = np.concatenate(
         (train_overlap, train_normalized_overlap, train_tfidf_similarity), axis=1)
-    dev_combined_features = np.concatenate(
+    if use_dev == 1:
+        dev_combined_features = np.concatenate(
         (dev_overlap, dev_normalized_overlap, dev_tfidf_similarity), axis=1)
     test_combined_features = np.concatenate(
         (test_overlap, test_normalized_overlap, test_tfidf_similarity), axis=1)
@@ -441,14 +458,16 @@ else:
 results_file = open(results_path, 'a')
 
 if use_sentiment_features:
-    run_classifiers(train_overlap, train_normalized_overlap, train_tfidf_similarity, train_svd_similarity, train_combined_features, dev_overlap,
+    if use_dev == 1:
+        run_classifiers(train_overlap, train_normalized_overlap, train_tfidf_similarity, train_svd_similarity, train_combined_features, dev_overlap,
                     dev_normalized_overlap, dev_tfidf_similarity, dev_svd_similarity, dev_combined_features, "DEV", train_sentiment, dev_sentiment)
     run_classifiers(train_overlap, train_normalized_overlap, train_tfidf_similarity, train_svd_similarity, train_combined_features, test_overlap,
                     test_normalized_overlap, test_tfidf_similarity, test_svd_similarity, test_combined_features, "TEST", train_sentiment, test_sentiment)
     run_classifiers(train_overlap, train_normalized_overlap, train_tfidf_similarity, train_svd_similarity, train_combined_features, gold_overlap,
                     gold_normalized_overlap, gold_tfidf_similarity, gold_svd_similarity, gold_combined_features, "GOLD", train_sentiment, gold_sentiment)
 else:
-    run_classifiers(train, train_overlap, train_normalized_overlap, train_tfidf_similarity, train_svd_similarity, train_combined_features,
+    if use_dev == 1:
+        run_classifiers(train, train_overlap, train_normalized_overlap, train_tfidf_similarity, train_svd_similarity, train_combined_features,
                     dev, dev_overlap, dev_normalized_overlap, dev_tfidf_similarity, dev_svd_similarity, dev_combined_features, "DEV")
     run_classifiers(train, train_overlap, train_normalized_overlap, train_tfidf_similarity, train_svd_similarity, train_combined_features,
                     test, test_overlap, test_normalized_overlap, test_tfidf_similarity, test_svd_similarity, test_combined_features, "TEST")

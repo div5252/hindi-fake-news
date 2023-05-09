@@ -336,12 +336,13 @@ def run_classifiers(train, train_overlap, train_normalized_overlap, train_tfidf_
 parser = argparse.ArgumentParser(
     description='News similarity classifier Arguments')
 parser.add_argument('--train_path', type=str, required=True)
-parser.add_argument('--dev_path', type=str, required=True)
+parser.add_argument('--dev_path', type=str, default='')
 parser.add_argument('--test_path', type=str, required=True)
 parser.add_argument('--gold_path', type=str, required=True)
 parser.add_argument('--results_path', type=str, required=True)
 parser.add_argument('--use_sentiment_features',
                     type=int, default=0, required=False)
+parser.add_argument('--use_dev', type=int, default=0)
 parser.add_argument('--bert_dir', type=str, required=False)
 
 args = vars(parser.parse_args())
@@ -352,11 +353,13 @@ test_path = os.path.abspath(args['test_path'])
 gold_path = os.path.abspath(args['gold_path'])
 results_path = os.path.abspath(args['results_path'])
 use_sentiment_features = int(args['use_sentiment_features'])
+use_dev = int(args['use_dev'])
 if use_sentiment_features:
     bert_dir = os.path.abspath(args['bert_dir'])
 
 train = pd.read_csv(train_path)
-dev = pd.read_csv(dev_path)
+if use_dev == 1:
+    dev = pd.read_csv(dev_path)
 test = pd.read_csv(test_path)
 gold = pd.read_csv(gold_path)
 
@@ -365,14 +368,16 @@ results_file = open(results_path, 'a')
 if use_sentiment_features:
     train_sentiment, train_overlap, train_normalized_overlap, train_tfidf_similarity, train_combined_features = return_features(
         train)
-    dev_sentiment, dev_overlap, dev_normalized_overlap, dev_tfidf_similarity, dev_combined_features = return_features(
+    if use_dev == 1:
+        dev_sentiment, dev_overlap, dev_normalized_overlap, dev_tfidf_similarity, dev_combined_features = return_features(
         dev)
     test_sentiment, test_overlap, test_normalized_overlap, test_tfidf_similarity, test_combined_features = return_features(
         test)
     gold_sentiment, gold_overlap, gold_normalized_overlap, gold_tfidf_similarity, gold_combined_features = return_features(
         gold)
 
-    run_classifiers(train_overlap, train_normalized_overlap, train_tfidf_similarity, train_combined_features, dev_overlap,
+    if use_dev == 1:
+        run_classifiers(train_overlap, train_normalized_overlap, train_tfidf_similarity, train_combined_features, dev_overlap,
                     dev_normalized_overlap, dev_tfidf_similarity, dev_combined_features, "DEV", train_sentiment, dev_sentiment)
     run_classifiers(train_overlap, train_normalized_overlap, train_tfidf_similarity, train_combined_features, test_overlap,
                     test_normalized_overlap, test_tfidf_similarity, test_combined_features, "TEST", train_sentiment, test_sentiment)
@@ -381,14 +386,16 @@ if use_sentiment_features:
 else:
     train_overlap, train_normalized_overlap, train_tfidf_similarity, train_combined_features = return_features(
         train)
-    dev_overlap, dev_normalized_overlap, dev_tfidf_similarity, dev_combined_features = return_features(
+    if use_dev == 1:
+        dev_overlap, dev_normalized_overlap, dev_tfidf_similarity, dev_combined_features = return_features(
         dev)
     test_overlap, test_normalized_overlap, test_tfidf_similarity, test_combined_features = return_features(
         test)
     gold_overlap, gold_normalized_overlap, gold_tfidf_similarity, gold_combined_features = return_features(
         gold)
 
-    run_classifiers(train, train_overlap, train_normalized_overlap, train_tfidf_similarity, train_combined_features,
+    if use_dev == 1:
+        run_classifiers(train, train_overlap, train_normalized_overlap, train_tfidf_similarity, train_combined_features,
                     dev, dev_overlap, dev_normalized_overlap, dev_tfidf_similarity, dev_combined_features, "DEV")
     run_classifiers(train, train_overlap, train_normalized_overlap, train_tfidf_similarity, train_combined_features,
                     test, test_overlap, test_normalized_overlap, test_tfidf_similarity, test_combined_features, "TEST")
